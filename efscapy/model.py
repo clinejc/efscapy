@@ -14,22 +14,22 @@ class EfscapeAgent(Agent):
 
 class EfscapeModel(Model):
     """A model with some number of agents from an Efscape simulation."""
-    def __init__(self, N):
+    def __init__(self, N=1, width=200, height=100):
         self.num_agents = N
-        self.width = 100
-        self.height = 100
-        self.grid = ContinuousSpace(self.width, self.height, torus=True)
+        self.width = width
+        self.height = height
+        self.space = ContinuousSpace(self.width, self.height, torus=True)
         self.schedule = RandomActivation(self)
         self.timeCurrent = 0.
 
         # Create agents
         for i in range(self.num_agents):
-            a = EfscapeAgent(i, self)
-            self.schedule.add(a)
-            x = random.randrange(3, self.grid.width - 3)
-            y = random.randrange(3, self.grid.height - 3)
+            x = self.random.random() * self.space.x_max
+            y = self.random.random() * self.space.y_max
             pos = (x,y)
-            self.grid.place_agent(a, pos)
+            a = EfscapeAgent(i, self)
+            self.space.place_agent(a, pos)
+            self.schedule.add(a)
 
 
     def step(self):
