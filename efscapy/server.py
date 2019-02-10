@@ -2,7 +2,7 @@ import random
 import logging
 
 from mesa.visualization.ModularVisualization import ModularServer
-from .model import EfscapeAgent, EfscapeModel
+from .model import EfscapeAgent, EfscapePatch, EfscapeModel
 from .SimpleContinuousModule import SimpleCanvas
 
 logging.basicConfig(level=logging.INFO)
@@ -20,12 +20,23 @@ def agent_draw(agent):
                     "Layer": 0,
                     "r": 3}
         return portrayal
+    elif (isinstance(agent,EfscapePatch)):
+        print("Uid: {0}".format(agent.unique_id))
+        w = 1/agent.model.ncols
+        h = 1/agent.model.nrows
+        portrayal = {"Shape": "rect",
+                    "Color": "black",
+                    "Filled": False,
+                    "Layer": 0,
+                    "w": w,
+                    "h": h}
+        return portrayal
 
 efscape_canvas = SimpleCanvas(agent_draw, 500, 500)
 
 model_params = {
-    "N": 10,
-    "width": 150,
+    "N": 100,
+    "width": 100,
     "height": 100
 }
 

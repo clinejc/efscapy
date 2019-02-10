@@ -39,8 +39,8 @@ var ContinuousVisualization = function(height, width, context) {
 		var dy = h * height;
 
 		// Keep the drawing centered:
-		var x0 = (x*width) - 0.5*dx;
-		var y0 = (y*height) - 0.5*dy;
+		var x0 = (x*width);// - 0.5*dx;
+		var y0 = (y*height);// - 0.5*dy;
 
 		context.strokeStyle = color;
 		context.fillStyle = color;
