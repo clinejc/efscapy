@@ -106,6 +106,9 @@ class EfscapeModel(Model):
             self.space.place_agent(a, pos)
             self.schedule.add(a)
 
+    def __del__(self):
+        print('Model died')
+        self.communicator.destroy()
 
     def step(self):
         '''Advance the model by one step.'''

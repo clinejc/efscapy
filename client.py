@@ -112,7 +112,8 @@ def run(communicator):
 # Ice.initialize returns an initialized Ice communicator,
 # the communicator is destroyed once it goes out of scope.
 #
-with Ice.initialize(sys.argv, "config.client") as communicator:
+with Ice.initialize(sys.argv,
+        str(Path(os.environ['EFSCAPE_PATH']) / "src/server/config.client")) as communicator:
 
     #
     # The communicator initialization removes all Ice-related arguments from argv
