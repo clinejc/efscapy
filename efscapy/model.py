@@ -35,18 +35,13 @@ class EfscapePatch(Agent):
         pass
 
 class EfscapeModel(Model):
-    """A model with some number of agents from an Efscape simulation."""
-    def __init__(self, N=1, width=500, height=500):
-        self.num_agents = N
-        self.width = width
-        self.height = height
-        self.nrows = 10
-        self.ncols = 10
-        self.space = ContinuousSpace(self.width, self.height, torus=True)
-        self.schedule = RandomActivation(self)
-        self.timeCurrent = 0.
+    """A model with some number of agents from an Efscape simulation.
+    """
+    def __init__(self, paramsFileName, N=1, width=500, height=500):
+        # set the default model parameter file name
+        self.paramsFileName = paramsFileName
 
-        # Connect to efscape proxy
+        # Connect to efscape zeroc-ice proxy
         efscape_config_path = Path(os.environ['EFSCAPE_PATH']) / 'src/server/config.client'
         self.communicator = Ice.initialize(sys.argv, str(efscape_config_path))
 
@@ -59,56 +54,103 @@ class EfscapeModel(Model):
 
         print("ModelHome accessed successfully!")
 
-        parmName = 'ef_relogo.zombie.json'
-        f = open(str(Path(os.environ['EFSCAPE_HOME']) / parmName), 'r')
-        parmString = f.read()
+        # open the model parameter file
+        f = open(str(Path(os.environ['EFSCAPE_HOME']) / paramsFileName), 'r')
+        paramsString = f.read()
 
-        model = modelHome.createFromParameters(parmString)
+        # create a model instance from the parameters
+        self.model = modelHome.createFromParameters(paramsString)
 
-        if not model:
+        if not self.model:
             print('Invalid mode proxy!')
             sys.exit(1)
 
         print('model successfully created!')
 
-        simulator = modelHome.createSim(model)
+        # now retrieve model meta data
+        parameters = json.loads(paramsString)
+        self.info = parameters
+        if 'properties' not in parameters:
+            print('Missing <properties>!')
+            sys.exit(1)
+        
+        # get dimensions
+        self.max_x = parameters['properties']['max.x']
+        self.min_x = parameters['properties']['min.x']
+        self.max_y = parameters['properties']['max.y']
+        self.min_y = parameters['properties']['min.y']
 
-        if not simulator:
+        self.num_agents = N
+        self.width = self.max_x - self.min_x + 1#width
+        self.height = self.max_y - self.min_y + 1 #height
+        print('width=' + str(self.width))
+        print('height=' + str(self.height))
+        self.nrows = 10
+        self.ncols = 10
+        self.space = ContinuousSpace(self.width, self.height, torus=True)
+        self.schedule = RandomActivation(self)
+        self.timeCurrent = 0.
+
+
+        self.simulator = modelHome.createSim(self.model)
+
+        if not self.simulator:
             print('Invalid simulator proxy!')
             sys.exit(1)
 
         print('simulator created!')
 
-        if simulator.start():
+        if self.simulator.start():
             print('simulator started!')
         else:
             print('simulator failed to start!')
+
+        t = self.simulator.nextEventTime()
+        print('start time = ' + str(t))
+        self.simulator.execNextEvent()
+
+        agents = self.getTurtles()
+        print('number of agents = ' + str(len(agents)))
 
         # Create agents
         cnt = 0
         pwidth = self.width/self.ncols
         pheight = self.height/self.nrows
-        for i in range(self.ncols):
-            for j in range(self.nrows):
-                p = EfscapePatch(cnt, self)
-                x = pwidth * (0.5 + i)
-                y = pheight * (0.5 + j)
-                pos = (x,y)
-                self.space.place_agent(p, pos)
-                self.schedule.add(p)
-                cnt = cnt + 1
+        # for i in range(self.ncols):
+        #     for j in range(self.nrows):
+        #         p = EfscapePatch(cnt, self)
+        #         x = pwidth * (0.5 + i)
+        #         y = pheight * (0.5 + j)
+        #         pos = (x,y)
+        #         self.space.place_agent(p, pos)
+        #         self.schedule.add(p)
+        #         cnt = cnt + 1
 
-        for i in range(cnt, self.num_agents + cnt):
-            x = self.random.random() * self.space.x_max
-            y = self.random.random() * self.space.y_max
-            pos = (x,y)
-            a = EfscapeAgent(i, self)
-            self.space.place_agent(a, pos)
-            self.schedule.add(a)
+        # for i in range(cnt, self.num_agents + cnt):
+        #     x = self.random.random() * self.space.x_max
+        #     y = self.random.random() * self.space.y_max
+        #     pos = (x,y)
+        #     a = EfscapeAgent(i, self)
+        #     self.space.place_agent(a, pos)
+        #     self.schedule.add(a)
 
     def __del__(self):
         print('Model died')
         self.communicator.destroy()
+
+    def getTurtles(self):
+        '''Retrieves turtles from the <turtles_out> port'''
+        message = self.model.outputFunction()
+        print('message size = ' + str(len(message)))
+        self.breeds = [] # (re-)initialize breed list
+        self.turtles = [] # (re-)initialize turtle set
+        for x in message:
+            if x.port == 'turtles_out':
+                self.turtles = json.loads(x.valueToJson)
+            elif x.port == 'breeds_out':
+                self.breeds = json.loads(x.valueToJson)
+
+        return self.turtles
 
     def step(self):
         '''Advance the model by one step.'''

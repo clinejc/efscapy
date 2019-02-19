@@ -35,6 +35,7 @@ def agent_draw(agent):
 efscape_canvas = SimpleCanvas(agent_draw, 500, 500)
 
 model_params = {
+    "paramsFileName": "ef_relogo.zombie.json",
     "N": 100,
     "width": 100,
     "height": 100
@@ -49,7 +50,7 @@ def launch_efscape_model():
     server.port = 8521
     server.launch()
 
-    model = EfscapeModel(num_agents)
+    #model = EfscapeModel(num_agents)
     #for i in range(10): 
     #    model.step()
 
