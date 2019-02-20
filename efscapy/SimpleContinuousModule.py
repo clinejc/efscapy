@@ -22,12 +22,12 @@ class SimpleCanvas(VisualizationElement):
     def render(self, model):
         space_state = []
 
-        id2portrayal = {}
+        breedPortrayals = {}
         if 'visualization' in model.info:
             viz = model.info["visualization"]
             print(viz)
             for key, value in model.breeds.items():
-                id2portrayal[value] = viz[key]
+                breedPortrayals[value] = viz[key]
 
         else:
             print("visualization not found")
@@ -35,16 +35,22 @@ class SimpleCanvas(VisualizationElement):
             if 'description' not in model.info:
                 print("Something is wrong")
 
-        print(id2portrayal)
+        print(breedPortrayals)
 
         for obj in model.turtles:
-            portrayal = {"Shape": "circle",
-                    "Color": "red",
+            # portrayal = breedPortrayals[obj["type"]]
+            portrayal = {#"Shape":"circle",
                     "Filled": "true",
-                    "Layer": 0,
-                    "r": 3}
+                    "Layer": 0}
+
+            portrayal["Shape"] = breedPortrayals[obj["type"]]["Shape"]
+            portrayal["Color"] = breedPortrayals[obj["type"]]["Color"]
+            portrayal["r"] = breedPortrayals[obj["type"]]["r"]
+
+            # translate coordinates
             x = obj["xCor"] - model.min_x + 1
             y = model.max_y - obj["yCor"] - 1
+
             x = ((x - model.space.x_min) /
                  (model.space.x_max - model.space.x_min))
             y = ((y - model.space.y_min) /

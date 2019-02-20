@@ -81,7 +81,7 @@ class EfscapeModel(Model):
         self.min_y = parameters['properties']['min.y']
 
         self.num_agents = N
-        self.width = self.max_x - self.min_x + 1#width
+        self.width = self.max_x - self.min_x + 1 #width
         self.height = self.max_y - self.min_y + 1 #height
         print('width=' + str(self.width))
         print('height=' + str(self.height))
@@ -89,8 +89,7 @@ class EfscapeModel(Model):
         self.ncols = 10
         self.space = ContinuousSpace(self.width, self.height, torus=True)
         self.schedule = RandomActivation(self)
-        self.timeCurrent = 0.
-
+        self.currentTick = 0.
 
         self.simulator = modelHome.createSim(self.model)
 
@@ -105,12 +104,19 @@ class EfscapeModel(Model):
         else:
             print('simulator failed to start!')
 
-        t = self.simulator.nextEventTime()
-        print('start time = ' + str(t))
-        self.simulator.execNextEvent()
+        # attempt to load messages
+        self.loadMessages()
 
-        agents = self.getTurtles()
-        print('number of agents = ' + str(len(agents)))
+        t = 0
+        if len(self.turtles) == 0:
+            t = self.simulator.nextEventTime()
+            self.simulator.execNextEvent()
+            self.loadMessages()
+            print('start time = ' + str(t))
+            print('Model currentTick = ' + str(self.currentTick))
+
+        self.running = not self.simulator.halt()
+        print('number of agents = ' + str(len(self.turtles)))
 
         # Create agents
         cnt = 0
@@ -138,22 +144,33 @@ class EfscapeModel(Model):
         print('Model died')
         self.communicator.destroy()
 
-    def getTurtles(self):
-        '''Retrieves turtles from the <turtles_out> port'''
+    def loadMessages(self):
+        '''
+        Retrieves turtles from the following output ports:
+
+        * turtles: list of all turtles
+        * breeds: map of all breeds to type ids
+        * currentTick: current simulation time
+        '''
         message = self.model.outputFunction()
         print('message size = ' + str(len(message)))
-        self.breeds = [] # (re-)initialize breed list
+        self.breeds = {} # (re-)initialize breed list
         self.turtles = [] # (re-)initialize turtle set
         for x in message:
-            if x.port == 'turtles_out':
+            if x.port == 'turtles':
                 self.turtles = json.loads(x.valueToJson)
-            elif x.port == 'breeds_out':
+            elif x.port == 'breeds':
                 self.breeds = json.loads(x.valueToJson)
-
-        return self.turtles
+            elif x.port == 'currentTick':
+                self.currentTick = json.loads(x.valueToJson)
 
     def step(self):
         '''Advance the model by one step.'''
-        self.schedule.step()
-        self.timeCurrent += 1.0
-        print(self.timeCurrent)
+        self.running = not self.simulator.halt()
+        if self.running:
+            self.schedule.step()
+            t = self.simulator.nextEventTime()
+            self.simulator.execNextEvent()
+            self.loadMessages()
+            print('Client event time = ' + str(t))
+            print('Model currentTick = ' + str(self.currentTick))
