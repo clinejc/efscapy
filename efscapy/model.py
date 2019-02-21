@@ -108,12 +108,12 @@ class EfscapeModel(Model):
         self.loadMessages()
 
         t = 0
-        if len(self.turtles) == 0:
-            t = self.simulator.nextEventTime()
-            self.simulator.execNextEvent()
-            self.loadMessages()
-            print('start time = ' + str(t))
-            print('Model currentTick = ' + str(self.currentTick))
+        # if len(self.turtles) == 0:
+        #     t = self.simulator.nextEventTime()
+        #     self.simulator.execNextEvent()
+        #     self.loadMessages()
+        #     print('start time = ' + str(t))
+        #     print('Model currentTick = ' + str(self.currentTick))
 
         self.running = not self.simulator.halt()
         print('number of agents = ' + str(len(self.turtles)))
